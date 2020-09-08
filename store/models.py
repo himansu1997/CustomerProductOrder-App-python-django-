@@ -8,7 +8,6 @@ class Product(models.Model):
     brand = models.CharField(max_length=250, blank=True)
     description = models.CharField(max_length=300,blank=True,null=True)
     price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    active = models.NullBooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True,null=True)
     modified = models.DateTimeField(auto_now=True,null=True)
 
@@ -22,18 +21,28 @@ class Customer(models.Model):
     email_id = models.CharField(max_length=250,null=True,blank=True)
     mobile_number = models.CharField(max_length=250,null=True,blank=True)
     address = models.CharField(max_length=250,null=True,blank=True)
+    created = models.DateTimeField(auto_now_add=True,null=True)
 
     def __str__(self):
-        return "%s"%self.first_name
+        return "%s"%self.customer_number
     
-class Orderedproduct(models.Model):
-    order = models.ForeignKey(Customer)
-    product = models.ForeignKey(Product)
+class Order(models.Model):
+    customer = models.ForeignKey(Customer)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    order_date = models.DateTimeField(auto_now_add=True,null=True)
+    oder_status = models.BooleanField(default=True)
     billing_address = models.CharField(max_length=250)
     shipping_address = models.CharField(max_length=250)
-    status = models.BooleanField(default=True)
-    order_date = models.DateTimeField(auto_now_add=True,null=True)
-    order_amount =models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    created = models.DateTimeField(auto_now_add=True,null=True)
+
+class Orderedproducts(models.Model):
+    order = models.ForeignKey(Order)
+    product = models.ForeignKey(Product)
+    quantity = models.CharField(max_length=250,null=True,blank=True)
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
 
     def __str__(self):
         return "%s"%self.order_id
+
+
