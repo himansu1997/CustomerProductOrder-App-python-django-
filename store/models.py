@@ -6,18 +6,17 @@ class Product(models.Model):
     product_number = models.CharField(max_length=100,unique=True)
     name = models.CharField(max_length=250)
     brand = models.CharField(max_length=250, blank=True)
-    description = models.CharField(max_length=300,blank=True)
+    description = models.CharField(max_length=300,blank=True,null=True)
     price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    featured = models.BooleanField(default=False)
-    active = models.BooleanField(default=True)
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    active = models.NullBooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True,null=True)
+    modified = models.DateTimeField(auto_now=True,null=True)
 
     def __str__(self):
         return "%s"%self.product_number
 
 class Customer(models.Model):
-    product = models.ForeignKey(Product)
+    customer_number = models.CharField(max_length=250,null=True,blank=True)
     first_name = models.CharField(max_length=250,null=True,blank=True)
     last_name = models.CharField(max_length=250,null=True,blank=True)
     email_id = models.CharField(max_length=250,null=True,blank=True)
@@ -27,8 +26,9 @@ class Customer(models.Model):
     def __str__(self):
         return "%s"%self.first_name
     
-class Order(models.Model):
-    order_id = models.ForeignKey(Customer)
+class Orderedproduct(models.Model):
+    order = models.ForeignKey(Customer)
+    product = models.ForeignKey(Product)
     billing_address = models.CharField(max_length=250)
     shipping_address = models.CharField(max_length=250)
     status = models.BooleanField(default=True)

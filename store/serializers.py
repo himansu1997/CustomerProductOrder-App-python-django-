@@ -3,14 +3,31 @@ from rest_framework import serializers
 from models import * 
 from store.models import Product
 #from store.models import Product
-class ProductCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = ('product_number','name','brand','shipping','description','price')
+# class ProductCreateSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Product
+#         fields = ('product_number','name','brand','shipping','description','price')
+
+
+class ProductAddSerializer(serializers.Serializer):
+    product_number = models.CharField(max_length=100,unique=True)
+    name = models.CharField(max_length=250)
+    brand = models.CharField(max_length=250, blank=True)
+    description = models.CharField(max_length=300,blank=True)
+    price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    active = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+
+    def validate_product_number(self,value):
+        value=value.replace(' ',' ')
+        if not value.isnumeric():
+            raise serializers.ValidationError("Product Number should be a digit")
 
 class OrderCreateSerializer(serializers.ModelSerializer):
 	class Meta:
-		model = Order
+		model = Orderedproduct
 		fields = ('billing_address','shipping_address','status','order_date','order_amount')
 
 
