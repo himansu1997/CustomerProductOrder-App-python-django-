@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 from store.models import Product
 from store.models import Customer
 from store.models import Orderedproducts
-from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSerializer
+from store.models import Order
+from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer
 from rest_framework.decorators import api_view
 
 from rest_framework import status 
@@ -85,7 +86,6 @@ class ProductGet(APIView):
             "brand":product_obj.brand,
             "price":product_obj.price,
             "description":product_obj.description,
-            "active":product_obj.active,
             "created":product_obj.created,
             "modified":product_obj.modified
             }
@@ -139,14 +139,14 @@ class CustomerCreate(APIView):
                 }
 
 
-                # if 'product_number' in request.data:
+                if 'customer_number' in request.data:
 
                         
-                #         product_number = request.data['product_number']
-                #         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
-                #         if(product_number_check.search(product_number) != None):
-                #             context_data = {"success" : False, "errors" :{"message" : "Product Number should not contain special characters"}}
-                #             return Response(context_data)  
+                        product_number = request.data['customer_number']
+                        product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+                        if(product_number_check.search(product_number) != None):
+                            context_data = {"success" : False, "errors" :{"message" : "Customer Number should be Numerics"}}
+                            return Response(context_data)  
                 
                 
                 #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
@@ -188,34 +188,79 @@ class GetCustomerDetails(APIView):
 
 
 
-class GrtOredrDetails(APIView):
-    def post(self,request,format=None):
-        serializer = CustomerGetSerializer(data=request.data)
+class OrderCreate(APIView):
+    def get(self, request, format=None):
+        serializer = OrderCreateSeriliazer()
+        context_data = {"success" : False, "data" : serializer.data}    
+        return Response(context_data)
+    
+    @method_decorator(csrf_exempt)
+    def post(self, request,  format=None):
+        serializer = OrderCreateSeriliazer(data=request.data)
         if serializer.is_valid():
-            order_id = request.data['id']
+            #Verify Product
             
+            # #order_obj_count = Order.objects.filter(order_id=request.data['order_id'])
+            # if customer_obj_count.count() > 0:
+            #     context_data = {"success" : False, "data" :{"message" : "Order Number Already Exist"}}
+            #     return Response(context_data)
+        
             try:
-                    order_obj = Customer.objects.filter(id=id).values
-                    #product_data.append(products_obj)
-                    context_data = {"success" : True, "data" : products_obj}
-            except Customer.DoesNotExist:
-                    context_data = {"success" : False, "errors" : {"message": "Id Does Not Exist" }}
-                    pass
+                order_details = {
+                "total_amount":request.data.get('total_amount'),
+                "order_date": request.data.get('order_date'),
+                #"order_status": request.data.get('order_status'),
+                "customer_id" : request.data.get('customer_id'),
+                "billing_address": request.data.get('billing_address'),
+                "shipping_address": request.data.get('shipping_address'),
+                }
+
+
+                # if 'customer_number' in request.data:
+
+                        
+                #         product_number = request.data['customer_number']
+                #         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+                #         if(product_number_check.search(product_number) != None):
+                #             context_data = {"success" : False, "errors" :{"message" : "Customer Number should be Numerics"}}
+                #             return Response(context_data)  
+                
+                
+                #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
+                #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
+                order_data = Order.objects.create(**order_details)
+                context_data = {"success" : True, "data" :{"customer_data": order_data, "message" : "Your Order has Placed Successfully"}}
+            except Exception as e:
+                #traceback.print_exc()
+                context_data = {"success" : False, "errors" : {"message":str(e)}}
         else:
-            print serializer.errors
-            context_data = {"success" : False, "errors" : {"message": "Validation Error" ,  "errors_list" :serializer.errors}}
+            context_data = {"success" : False, "errors" : {"message":"Not created" }}
         return Response(context_data)
 
 
 
-class OrderCreate(APIView):
-    def post(serializers,request,format=None):
-        serializer= OrderCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+class GetOrderedDetails(APIView):
+    def get(self,request, order_id=None, format=None):
+        try:
+            #ordered_obj = Orderedproducts.objects.get(product_number=product_number)
+            ordered_obj = Order.objects.get(pk=order_id)
+            #ordered1_obj = Customer.objects.filter().values(customer_number=request.data['customer_number']).values('first_name')
+            ordered_data = []
+            
+            ordered_get_objects ={
+            "order":ordered_obj.id,
+            "total_amount":ordered_obj.total_amount,
+            "customer":ordered_obj.id,
+            "product":ordered_obj.id,
+            "shipping_address":ordered_obj.shipping_address,
+            "billing_address":ordered_obj.billing_address,
+            "order_date":ordered_obj.order_date,
 
-
-
+            }
+            ordered_data.append(ordered_get_objects)
+            context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+        except Order.DoesNotExist as e:            
+            context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+            pass
+        return Response(context_data)
 

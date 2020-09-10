@@ -10,20 +10,14 @@ class ProductAddSerializer(serializers.Serializer):
     description = models.CharField(max_length=300,blank=True)
     price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
     #active = models.BooleanField(default=True)
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    # created = models.DateTimeField(auto_now_add=True)
+    # modified = models.DateTimeField(auto_now=True)
 
 
     def validate_product_number(self,value):
         value=value.replace(' ',' ')
         if not value.isnumeric():
             raise serializers.ValidationError("Product Number should be a digit")
-
-class OrderCreateSerializer(serializers.ModelSerializer):
-	class Meta:
-		model = Orderedproducts
-		fields = ('billing_address','shipping_address','status','order_date','order_amount')
-
 
 class CustomerCreateSerializer(serializers.Serializer):
     customer_number = models.CharField(max_length=100,unique=True)
@@ -57,7 +51,7 @@ class CustomerCreateSerializer(serializers.Serializer):
 	        raise serializers.ValidationError("Invalid mobile number")
 	    return value
 
-    def validate_email(self):
+    def validate_email_id(self):
         email = self.cleaned_data["email"]
         if " " in email:
             raise forms.ValidationError('Enter a vaild email')
@@ -71,3 +65,11 @@ class CustomerCreateSerializer(serializers.Serializer):
 
 # class ProductGetSerializer(serializers.Serializer):
 #     product_no = models.CharField(max_length=200)
+
+class OrderCreateSeriliazer(serializers.Serializer):
+    customer = models.ForeignKey(Customer)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    order_date = models.DateTimeField(auto_now_add=True,null=True)
+    oder_status = models.BooleanField(default=True)
+    billing_address = models.CharField(max_length=250)
+    shipping_address = models.CharField(max_length=250)
