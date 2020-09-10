@@ -20,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import re
 
+import csv
 
 class ProductAddSet(APIView):
     def get(self, request, format=None):
@@ -61,7 +62,8 @@ class ProductAddSet(APIView):
                 #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 product_data = Product.objects.create(**product_details)
-                context_data = {"success" : True, "data" :{"product_data": product_data, "message" : "Product Added Successfully"}}
+                queryset = Product.objects.filter(product_number=product_number).values('name','brand','description','price')
+                context_data = {"success" : True, "data" :{"product_data": queryset, "message" : "Product Added Successfully"}}
             except Exception as e:
                 #traceback.print_exc()
                 context_data = {"success" : False, "errors" : {"message":str(e)}}
@@ -200,10 +202,10 @@ class OrderCreate(APIView):
         if serializer.is_valid():
             #Verify Product
             
-            # #order_obj_count = Order.objects.filter(order_id=request.data['order_id'])
-            # if customer_obj_count.count() > 0:
-            #     context_data = {"success" : False, "data" :{"message" : "Order Number Already Exist"}}
-            #     return Response(context_data)
+            order_obj_count = Order.objects.filter(id=pk)
+            if order_obj_count.count() > 0:
+                context_data = {"success" : False, "data" :{"message" : "Order Number Already Exist"}}
+                return Response(context_data)
         
             try:
                 order_details = {
@@ -244,7 +246,9 @@ class GetOrderedDetails(APIView):
         try:
             #ordered_obj = Orderedproducts.objects.get(product_number=product_number)
             ordered_obj = Order.objects.get(pk=order_id)
-            #ordered1_obj = Customer.objects.filter().values(customer_number=request.data['customer_number']).values('first_name')
+
+            #customer_obj=
+            #ordered_obj = Customer.objects.filter().values(customer_number=request.data['customer_number']).values('first_name')
             ordered_data = []
             
             ordered_get_objects ={
@@ -255,6 +259,12 @@ class GetOrderedDetails(APIView):
             "shipping_address":ordered_obj.shipping_address,
             "billing_address":ordered_obj.billing_address,
             "order_date":ordered_obj.order_date,
+
+
+
+
+
+
 
             }
             ordered_data.append(ordered_get_objects)
