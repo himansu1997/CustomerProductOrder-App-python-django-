@@ -8,20 +8,22 @@ from store.models import Product
 from store.models import Customer
 from store.models import Orderedproducts
 from store.models import Order
-from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer
+from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer,GetOrderSerializer
 from rest_framework.decorators import api_view
-
 from rest_framework import status 
 from rest_framework import request
 import json,ast
 import os
-
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import re
-
 import csv
+import pandas as pd
+from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseForbidden
+import datetime
 
+
+ #Adding the products
 class ProductAddSet(APIView):
     def get(self, request, format=None):
         serializer = ProductAddSerializer()
@@ -38,7 +40,6 @@ class ProductAddSet(APIView):
             if product_obj_count.count() > 0:
                 context_data = {"success" : False, "data" :{"message" : "Product Number Already Exists"}}
                 return Response(context_data)
-        
             try:
                 product_details = {
                 "product_number":request.data.get('product_number'),
@@ -47,18 +48,12 @@ class ProductAddSet(APIView):
                 "description": request.data.get('description'),
                 "price": request.data.get('price'),
                 }
-
-
                 if 'product_number' in request.data:
-
-                        
                         product_number = request.data['product_number']
                         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
                         if(product_number_check.search(product_number) != None):
                             context_data = {"success" : False, "errors" :{"message" : "Product Number should not contain special characters"}}
                             return Response(context_data)  
-                
-                
                 #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 product_data = Product.objects.create(**product_details)
@@ -100,7 +95,7 @@ class ProductGet(APIView):
 
 
 
-
+ #delete the product by id
 class DeleteOrder(APIView):
     def post(self,request,username=None):
         try:            
@@ -125,9 +120,9 @@ class CustomerCreate(APIView):
         if serializer.is_valid():
             #Verify Product
             
-            customer_obj_count = Customer.objects.filter(customer_number=request.data['customer_number'])
+            customer_obj_count = Customer.objects.filter(customer__customer_number=request.data['customer_number'],customer__mobile_number=request.data['mobile_number'])
             if customer_obj_count.count() > 0:
-                context_data = {"success" : False, "data" :{"message" : "Customer Number Already Exist"}}
+                context_data = {"success" : False, "data" :{"message" : "Customer Already Exist"}}
                 return Response(context_data)
         
             try:
@@ -144,17 +139,17 @@ class CustomerCreate(APIView):
                 if 'customer_number' in request.data:
 
                         
-                        product_number = request.data['customer_number']
-                        product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
-                        if(product_number_check.search(product_number) != None):
+                        customer_number = request.data['customer_number']
+                        customer_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+                        if(customer_number_check.search(customer_number) != None):
                             context_data = {"success" : False, "errors" :{"message" : "Customer Number should be Numerics"}}
                             return Response(context_data)  
                 
                 
-                #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
+                queryset = Customer.objects.filter(customer_number=customer_number).values('id','customer_number','first_name','last_name','email_id','mobile_number','address')
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 customer_data = Customer.objects.create(**customer_details)
-                context_data = {"success" : True, "data" :{"customer_data": customer_data, "message" : "Product Added Successfully"}}
+                context_data = {"success" : True, "data" :{"customer_data": queryset, "message" : "Customer created Successfully"}}
             except Exception as e:
                 #traceback.print_exc()
                 context_data = {"success" : False, "errors" : {"message":str(e)}}
@@ -163,7 +158,15 @@ class CustomerCreate(APIView):
         return Response(context_data)
 
 
-
+class DeleteCustomer(APIView):
+    def post(self,request,username=None):
+        try:            
+            cust_obj = Customer.objects.get(pk=request.data['id'])
+            cust_obj.delete()
+            context_data = {"success" : True,"data" : {"message":'Customer has Removed Successfully'}}
+        except Customer.DoesNotExist as e:
+            context_data = {"success" : False,"errors" : {"message":"No Customer is available with this Id"}}
+        return Response(context_data) 
 
 
 class GetCustomerDetails(APIView):
@@ -216,18 +219,6 @@ class OrderCreate(APIView):
                 "billing_address": request.data.get('billing_address'),
                 "shipping_address": request.data.get('shipping_address'),
                 }
-
-
-                # if 'customer_number' in request.data:
-
-                        
-                #         product_number = request.data['customer_number']
-                #         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
-                #         if(product_number_check.search(product_number) != None):
-                #             context_data = {"success" : False, "errors" :{"message" : "Customer Number should be Numerics"}}
-                #             return Response(context_data)  
-                
-                
                 #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 order_data = Order.objects.create(**order_details)
@@ -242,35 +233,173 @@ class OrderCreate(APIView):
 
 
 class GetOrderedDetails(APIView):
-    def get(self,request, order_id=None, format=None):
-        try:
-            #ordered_obj = Orderedproducts.objects.get(product_number=product_number)
+    def get(self,request,query_type, order_id):
+        if query_type == 'json':
+            try:
+
+                ordered_obj = Order.objects.get(pk=order_id)
+                ordered_data = []
+            
+                ordered_get_objects ={
+                "order":ordered_obj.id,
+                "total_amount":ordered_obj.total_amount,
+                "customer":ordered_obj.id,
+                "first_name":ordered_obj.customer.first_name,
+                "last_name":ordered_obj.customer.last_name,
+                "mobile_number":ordered_obj.customer.mobile_number,
+                "email_id":ordered_obj.customer.email_id,
+                "address":ordered_obj.customer.address,
+                "product":ordered_obj.id,
+                "shipping_address":ordered_obj.shipping_address,
+                "billing_address":ordered_obj.billing_address,
+                "order_date":ordered_obj.order_date,
+                }
+                ordered_data.append(ordered_get_objects)
+                context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+            except Order.DoesNotExist as e:            
+                context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+                pass
+            return Response(context_data)
+
+        elif query_type =='csv':
             ordered_obj = Order.objects.get(pk=order_id)
 
-            #customer_obj=
-            #ordered_obj = Customer.objects.filter().values(customer_number=request.data['customer_number']).values('first_name')
-            ordered_data = []
-            
-            ordered_get_objects ={
-            "order":ordered_obj.id,
-            "total_amount":ordered_obj.total_amount,
-            "customer":ordered_obj.id,
-            "product":ordered_obj.id,
-            "shipping_address":ordered_obj.shipping_address,
-            "billing_address":ordered_obj.billing_address,
-            "order_date":ordered_obj.order_date,
+            # ordered_get_csv ={
+            #     #"order":ordered_obj.id,
+            #     "total_amount":ordered_obj.total_amount,
+            #     #"customer":ordered_obj.id,
+            #     "first_name":ordered_obj.customer.first_name,
+            #     "last_name":ordered_obj.customer.last_name,
+            #     "mobile_number":ordered_obj.customer.mobile_number,
+            #     "email_id":ordered_obj.customer.email_id,
+            #     "address":ordered_obj.customer.address,
+            #     #"product":ordered_obj.id,
+            #     #"name":product_obj.product.name,
+            #     "shipping_address":ordered_obj.shipping_address,
+            #     "billing_address":ordered_obj.billing_address,
+            #     "order_date":ordered_obj.order_date,
+            #     }
 
 
 
+            response = HttpResponse(content_type='text/csv')
 
+            #current_date = datetime.now().strftime("%Y-%m-%d : %H-%M-%S %p")
 
+            filename = "Order-Data-Download_{}.csv"
+            response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
 
+            field_names = ['total_amount','first_name','last_name','mobile_number','email_id','address','shipping_address','billing_address','order_date']
 
-            }
-            ordered_data.append(ordered_get_objects)
-            context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
-        except Order.DoesNotExist as e:            
-            context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
-            pass
+            writer=csv.writer(response)
+            writer.writerow(field_names)
+            writer.writerow([ordered_obj.total_amount,ordered_obj.customer.first_name,ordered_obj.customer.last_name,ordered_obj.customer.mobile_number,ordered_obj.customer.email_id,ordered_obj.customer.address,ordered_obj.shipping_address,ordered_obj.billing_address,ordered_obj.order_date])
+
+            #writer.writerow(ordered_get_csv)
+
+            return response
+        else:
+            context_data = {"success":False,"errors":{"message": "query_type is not valid "}}
         return Response(context_data)
 
+
+
+
+# # def getcsv(request):
+# #     response = HttpResponse(content_type='text/csv')  
+# #     response['Content-Disposition'] = 'attachment; filename="order.csv"'  
+# #     orders = Order.objects.all()  
+# #     #orders = Order.objects.get(pk=order_id)
+# #     writer = csv.writer(response)  
+# #     for order in orders:  
+# #         writer.writerow([order.id,order.total_amount, order.billing_address, order.shipping_address,order.order_date])
+# #     return response  
+
+
+# def getcsv(request):
+
+#     # ordered_obj = []
+#     ordered_obj=Order.objects.get(pk=order_id)
+#     ordered_data = {
+#             "order":request.GET.get('order'),
+#             "total_amount":request.GET.get('total_amount'),
+#             "customer":request.GET.get('customer'),
+#             "first_name":request.GET.get('first_name'),
+#             "last_name":request.GET.get('last_name'),
+#             "mobile_number":request.GET.get('mobile_number'),
+#             "email_id":request.GET.get('mobile_number'),
+#             "address":request.GET.get('address'),
+#             "shipping_address":request.GET.get('shipping_address'),
+#             "billing_address":request.GET.get('billing_address'),
+#             "order_date":request.GET.get('order_date'),
+#             }
+
+#     response = HttpResponse(content_type='text/csv')
+#     response['Content-Disposition'] = 'attachment; filename="order.csv"'  
+#     columns = ['total_amount','first_name','last_name','mobile_number','email_id','address','shipping_address','billing_address','order_date'] 
+
+#     writer = csv.writer(response)
+#     writer.writerow(fields)
+
+#     for Order in  ordered_obj:
+#         # value = each_dict.ordered_data()
+#         writer.writerow(fields)
+
+#     return response
+
+
+
+# class GetOrderedDetails(APIView):
+#     def post(self,request):
+#         serializer = GetOrderSerializer(data=request.data)
+#         if serializer.is_valid():
+#             try:
+#                 ordered_data = []
+#                 if request.data['query_type'] == 'json':
+#                     try:
+#                         ordered_obj = Order.objects.get(id=request.data['id'])
+#                         ordered_get_objects ={
+#                                 "order":ordered_obj.id,
+#                                 "total_amount":ordered_obj.total_amount,
+#                                 "customer":ordered_obj.id,
+#                                 "first_name":ordered_obj.customer.first_name,
+#                                 "last_name":ordered_obj.customer.last_name,
+#                                 "mobile_number":ordered_obj.customer.mobile_number,
+#                                 "email_id":ordered_obj.customer.email_id,
+#                                 "address":ordered_obj.customer.address,
+#                                 "product":ordered_obj.id,
+#                                 #"name":product_obj.product.name,
+#                                 "shipping_address":ordered_obj.shipping_address,
+#                                 "billing_address":ordered_obj.billing_address,
+#                                 "order_date":ordered_obj.order_date,
+#                                 }
+#                         ordered_data.append(ordered_get_objects)
+#                         context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+#                     except Order.DoesNotExist as e:            
+#                             context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+#             except Order.DoesNotExist as e:            
+#                     context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+#                     return Response(context_data)
+
+#                 elif request.data['query_type'] == 'csv':
+#                     try:
+#                         ordered_obj = Order.objects.get(id=request.data['id'])
+#                         try:
+
+#                             response = HttpResponse(content_type='text/csv')
+#                             filename = "Order-List_{}.csv"
+#                             response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+
+#                             field_names = ['total_amount']
+
+#                             writer=csv.writer(response)
+#                             writer.writerow[ordered_obj.total_amount]
+
+#                         except Order.DoesNotExist as e:
+#                             context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+
+#                         return response
+
+#                 else:
+#                     context_data = {"success":False,"errors":{"message": "query_type is not valid "}}
+#                 return response(context_data)

@@ -9,7 +9,7 @@ class ProductAddSerializer(serializers.Serializer):
     brand = models.CharField(max_length=250, blank=True)
     description = models.CharField(max_length=300,blank=True)
     price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    #active = models.BooleanField(default=True)
+    # active = models.BooleanField(default=True)
     # created = models.DateTimeField(auto_now_add=True)
     # modified = models.DateTimeField(auto_now=True)
 
@@ -73,3 +73,8 @@ class OrderCreateSeriliazer(serializers.Serializer):
     oder_status = models.BooleanField(default=True)
     billing_address = models.CharField(max_length=250)
     shipping_address = models.CharField(max_length=250)
+
+
+class GetOrderSerializer(serializers.Serializer):
+    query_type = models.CharField(max_length=100)
+    id = models.CharField(max_length=100)

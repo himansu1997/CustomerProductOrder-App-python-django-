@@ -20,7 +20,14 @@ urlpatterns = [
     url(r'^products/get$', views.ProductGet.as_view(), name="get_product"),
     url(r'^order/add$', views.OrderCreate.as_view(), name="create_order"),
 
-    url(r'^orderd_details/(?P<order_id>[\w-]+)/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),
+    #url(r'^orderd_details/(?P<order_id>[\w-]+)/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),
 
-    
+    #url(r'^orderd_csv/get$', views.getcsv, name="get_all_data_csv"),
+
+    #url(r'^orderdcsvreport/get$', views.OrderCsvReportViewSet, name="get_all_data_csv"),
+
+
+    url(r'^orderd_details/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),
+
+    url(r'^orderd_details/(?P<order_id>[\w-]+)/(?P<query_type>\w+)$',views.GetOrderedDetails.as_view()),
 ]
