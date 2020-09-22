@@ -75,6 +75,7 @@ class OrderCreateSeriliazer(serializers.Serializer):
     shipping_address = models.CharField(max_length=250)
 
 
-class GetOrderSerializer(serializers.Serializer):
-    query_type = models.CharField(max_length=100)
-    id = models.CharField(max_length=100)
+class GetOrderSerializerDateRange(serializers.Serializer):
+    #query_type = models.CharField(max_length=100)
+    from_date = models.CharField(max_length=100)
+    to_date = models.CharField(max_length=100)

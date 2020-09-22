@@ -8,7 +8,7 @@ from store.models import Product
 from store.models import Customer
 from store.models import Orderedproducts
 from store.models import Order
-from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer,GetOrderSerializer
+from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer,GetOrderSerializerDateRange
 from rest_framework.decorators import api_view
 from rest_framework import status 
 from rest_framework import request
@@ -20,7 +20,12 @@ import re
 import csv
 import pandas as pd
 from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseForbidden
-import datetime
+from datetime import datetime
+
+from django.db.models import Max
+from django.db.models import Min
+
+from django.db.models import Count
 
 
  #Adding the products
@@ -159,7 +164,7 @@ class CustomerCreate(APIView):
 
 
 class DeleteCustomer(APIView):
-    def post(self,request,username=None):
+    def post(self,request,pk=None):
         try:            
             cust_obj = Customer.objects.get(pk=request.data['id'])
             cust_obj.delete()
@@ -200,14 +205,14 @@ class OrderCreate(APIView):
         return Response(context_data)
     
     @method_decorator(csrf_exempt)
-    def post(self, request,  format=None):
-        serializer = OrderCreateSeriliazer(data=request.data)
+    def post(self, request,format=None):
+        serializer = OrderCreateSeriliazer(data=request.data['id'])
         if serializer.is_valid():
             #Verify Product
             
-            order_obj_count = Order.objects.filter(id=pk)
+            order_obj_count = Order.objects.filter(order__id=request.data['id'])
             if order_obj_count.count() > 0:
-                context_data = {"success" : False, "data" :{"message" : "Order Number Already Exist"}}
+                context_data = {"success" : False, "data" :{"message" : "Order_Id Already Exist"}}
                 return Response(context_data)
         
             try:
@@ -233,74 +238,130 @@ class OrderCreate(APIView):
 
 
 class GetOrderedDetails(APIView):
-    def get(self,request,query_type, order_id):
+    def get(self,request,query_type):
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+
+        print(start_date,end_date)
         if query_type == 'json':
             try:
 
-                ordered_obj = Order.objects.get(pk=order_id)
+                ordered_obj_list = Order.objects.filter(order_date__range=[start_date,end_date])
+                #ordered_obj_list = Order.objects.get(id=4)
                 ordered_data = []
-            
-                ordered_get_objects ={
-                "order":ordered_obj.id,
-                "total_amount":ordered_obj.total_amount,
-                "customer":ordered_obj.id,
-                "first_name":ordered_obj.customer.first_name,
-                "last_name":ordered_obj.customer.last_name,
-                "mobile_number":ordered_obj.customer.mobile_number,
-                "email_id":ordered_obj.customer.email_id,
-                "address":ordered_obj.customer.address,
-                "product":ordered_obj.id,
-                "shipping_address":ordered_obj.shipping_address,
-                "billing_address":ordered_obj.billing_address,
-                "order_date":ordered_obj.order_date,
-                }
-                ordered_data.append(ordered_get_objects)
-                context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+                for each_order_obj in ordered_obj_list:
+                    ordered_get_objects ={
+                    "order_id":each_order_obj.id,
+                    "total_amount":each_order_obj.total_amount,
+                    "customer":each_order_obj.id,
+                    "first_name":each_order_obj.customer.first_name,
+                    "last_name":each_order_obj.customer.last_name,
+                    "mobile_number":each_order_obj.customer.mobile_number,
+                    "email_id":each_order_obj.customer.email_id,
+                    "address":each_order_obj.customer.address,
+                    #"product":each_order_obj.id,
+                    "shipping_address":each_order_obj.shipping_address,
+                    "billing_address":each_order_obj.billing_address,
+                    "order_date":each_order_obj.order_date,
+                    }
+                    ordered_data.append(ordered_get_objects)
+
+                context_data = {"success" : True, "data" :{"ordered details" :ordered_data}}
             except Order.DoesNotExist as e:            
                 context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
                 pass
             return Response(context_data)
 
+            #CSV
         elif query_type =='csv':
-            ordered_obj = Order.objects.get(pk=order_id)
 
-            # ordered_get_csv ={
-            #     #"order":ordered_obj.id,
-            #     "total_amount":ordered_obj.total_amount,
-            #     #"customer":ordered_obj.id,
-            #     "first_name":ordered_obj.customer.first_name,
-            #     "last_name":ordered_obj.customer.last_name,
-            #     "mobile_number":ordered_obj.customer.mobile_number,
-            #     "email_id":ordered_obj.customer.email_id,
-            #     "address":ordered_obj.customer.address,
-            #     #"product":ordered_obj.id,
-            #     #"name":product_obj.product.name,
-            #     "shipping_address":ordered_obj.shipping_address,
-            #     "billing_address":ordered_obj.billing_address,
-            #     "order_date":ordered_obj.order_date,
-            #     }
+            # start_date = request.GET.get('start_date')
+            # end_date = request.GET.get('end_date')
 
+            order_list =[]
+            ordered_obj_list = Order.objects.filter(order_date__range=[start_date,end_date])
 
+            for each_ord in ordered_obj_list:
+                first_name = each_ord.customer.first_name
+                last_name = each_ord.customer.last_name
+                mobile_number = each_ord.customer.mobile_number
+                email_id = each_ord.customer.mobile_number
+                address = each_ord.customer.address
+                shipping_address = each_ord.shipping_address
+                billing_address = each_ord.billing_address
+                order_date = each_ord.order_date
+                total_amount = each_ord.total_amount
+
+                order_list.append([first_name,last_name,mobile_number,email_id,address,shipping_address,billing_address,order_date,total_amount])
 
             response = HttpResponse(content_type='text/csv')
-
-            #current_date = datetime.now().strftime("%Y-%m-%d : %H-%M-%S %p")
-
+            current_date = datetime.now().strftime("%Y-%m-%d : %H-%M-%S %p")
             filename = "Order-Data-Download_{}.csv"
             response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
-
-            field_names = ['total_amount','first_name','last_name','mobile_number','email_id','address','shipping_address','billing_address','order_date']
+            field_names = ['first_name','last_name','mobile_number','email_id','address','shipping_address','billing_address','order_date','total_amount']
 
             writer=csv.writer(response)
             writer.writerow(field_names)
-            writer.writerow([ordered_obj.total_amount,ordered_obj.customer.first_name,ordered_obj.customer.last_name,ordered_obj.customer.mobile_number,ordered_obj.customer.email_id,ordered_obj.customer.address,ordered_obj.shipping_address,ordered_obj.billing_address,ordered_obj.order_date])
-
-            #writer.writerow(ordered_get_csv)
-
+            writer.writerows(order_list)
             return response
         else:
             context_data = {"success":False,"errors":{"message": "query_type is not valid "}}
         return Response(context_data)
+
+
+class AggregateView(APIView):
+    def get(self,request,query_type):
+        if query_type == 'Min':
+            try:
+                order_obj = Order.objects.aggregate(Min('total_amount'))
+                context_data = {"success":True, "data":{"data":order_obj, "message": "Minimum price from the Order"}}
+                return Response(context_data)
+            except Exception as e:
+                pass
+        elif query_type == 'Max':
+            try:
+                order_obj = Order.objects.aggregate(Max('total_amount'))
+                context_data = {"success":True, "data":{"data":order_obj, "message": "Maximum price from the Order"}}
+                return Response(context_data)
+            except Exception as e:
+                pass
+        else:
+            context_data = {"success":False, "errors":{"message": "Give a valid query_type"}}
+            return Response(context_data)
+
+
+
+class SummaryReportView(APIView):
+    def post(self,request,format=None):
+        try:
+            order_objects = Order.objects.filter(order_date=request.data['order_date'])
+            query = order_objects.values('order_date').annotate(order_count = (Count('id')))
+            context_data = {"success":True, "data" :query, "message": "Results for orders"}
+            return Response(context_data)
+        except Order.DoesNotExist as e:
+            context_data = {"success":False, "errors":{"message": "No record Found"}}
+            pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -403,3 +464,6 @@ class GetOrderedDetails(APIView):
 #                 else:
 #                     context_data = {"success":False,"errors":{"message": "query_type is not valid "}}
 #                 return response(context_data)
+
+
+
