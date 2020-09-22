@@ -23,6 +23,9 @@ urlpatterns = [
     url(r'^orderd_details/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),
     url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetails.as_view()),
 
+    #Get By Id
+    #url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetailsById.as_view()),
+
     #Min & Max url
     url(r'^orderd_details/aggregate/(?P<query_type>\w+)$',views.AggregateView.as_view()),
 

@@ -33,7 +33,7 @@ class Order(models.Model):
     oder_status = models.BooleanField(default=True)
     billing_address = models.CharField(max_length=250)
     shipping_address = models.CharField(max_length=250)
-    created = models.DateTimeField(auto_now_add=True,null=True)
+    #created = models.DateTimeField(auto_now_add=True,null=True)
 
 class Orderedproducts(models.Model):
     order = models.ForeignKey(Order)

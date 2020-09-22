@@ -125,7 +125,7 @@ class CustomerCreate(APIView):
         if serializer.is_valid():
             #Verify Product
             
-            customer_obj_count = Customer.objects.filter(customer__customer_number=request.data['customer_number'],customer__mobile_number=request.data['mobile_number'])
+            customer_obj_count = Customer.objects.filter(customer_number=request.data['customer_number'],mobile_number=request.data['mobile_number'])
             if customer_obj_count.count() > 0:
                 context_data = {"success" : False, "data" :{"message" : "Customer Already Exist"}}
                 return Response(context_data)
@@ -210,7 +210,7 @@ class OrderCreate(APIView):
         if serializer.is_valid():
             #Verify Product
             
-            order_obj_count = Order.objects.filter(order__id=request.data['id'])
+            order_obj_count = Order.objects.filter(id=request.data['id'])
             if order_obj_count.count() > 0:
                 context_data = {"success" : False, "data" :{"message" : "Order_Id Already Exist"}}
                 return Response(context_data)
@@ -247,7 +247,7 @@ class GetOrderedDetails(APIView):
             try:
 
                 ordered_obj_list = Order.objects.filter(order_date__range=[start_date,end_date])
-                #ordered_obj_list = Order.objects.get(id=4)
+                #ordered_obj_list = Order.objects.get(id=2)
                 ordered_data = []
                 for each_order_obj in ordered_obj_list:
                     ordered_get_objects ={
@@ -265,6 +265,7 @@ class GetOrderedDetails(APIView):
                     "order_date":each_order_obj.order_date,
                     }
                     ordered_data.append(ordered_get_objects)
+                print ordered_data
 
                 context_data = {"success" : True, "data" :{"ordered details" :ordered_data}}
             except Order.DoesNotExist as e:            
@@ -275,21 +276,18 @@ class GetOrderedDetails(APIView):
             #CSV
         elif query_type =='csv':
 
-            # start_date = request.GET.get('start_date')
-            # end_date = request.GET.get('end_date')
-
             order_list =[]
             ordered_obj_list = Order.objects.filter(order_date__range=[start_date,end_date])
 
             for each_ord in ordered_obj_list:
-                first_name = each_ord.customer.first_name
-                last_name = each_ord.customer.last_name
-                mobile_number = each_ord.customer.mobile_number
-                email_id = each_ord.customer.mobile_number
-                address = each_ord.customer.address
-                shipping_address = each_ord.shipping_address
-                billing_address = each_ord.billing_address
-                order_date = each_ord.order_date
+                # first_name = each_ord.customer.first_name
+                # last_name = each_ord.customer.last_name
+                # mobile_number = each_ord.customer.mobile_number
+                # email_id = each_ord.customer.mobile_number
+                # address = each_ord.customer.address
+                # shipping_address = each_ord.shipping_address
+                # billing_address = each_ord.billing_address
+                # order_date = each_ord.order_date
                 total_amount = each_ord.total_amount
 
                 order_list.append([first_name,last_name,mobile_number,email_id,address,shipping_address,billing_address,order_date,total_amount])
@@ -307,6 +305,8 @@ class GetOrderedDetails(APIView):
         else:
             context_data = {"success":False,"errors":{"message": "query_type is not valid "}}
         return Response(context_data)
+
+
 
 
 class AggregateView(APIView):
@@ -334,16 +334,12 @@ class AggregateView(APIView):
 class SummaryReportView(APIView):
     def post(self,request,format=None):
         try:
-            order_objects = Order.objects.filter(order_date=request.data['order_date'])
-            query = order_objects.values('order_date').annotate(order_count = (Count('id')))
-            context_data = {"success":True, "data" :query, "message": "Results for orders"}
+            order_objects = Order.objects.filter(order_date=request.data['order_date']).count()
+            context_data = {"success":True, "data" :order_objects, "message": "Number of orders are :"}
             return Response(context_data)
         except Order.DoesNotExist as e:
             context_data = {"success":False, "errors":{"message": "No record Found"}}
             pass
-
-
-
 
 
 
