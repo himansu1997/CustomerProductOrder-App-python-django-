@@ -199,35 +199,44 @@ class GetCustomerDetails(APIView):
 
 
 class OrderCreate(APIView):
-    def get(self, request, format=None):
+    def get(self, request,format=None):
         serializer = OrderCreateSeriliazer()
         context_data = {"success" : False, "data" : serializer.data}    
         return Response(context_data)
     
     @method_decorator(csrf_exempt)
     def post(self, request,format=None):
-        serializer = OrderCreateSeriliazer(data=request.data['id'])
+        serializer = OrderCreateSeriliazer(data=request.data)
         if serializer.is_valid():
             #Verify Product
             
-            order_obj_count = Order.objects.filter(id=request.data['id'])
+            order_obj_count = Order.objects.filter(customer_id=request.data['customer_id'])
             if order_obj_count.count() > 0:
-                context_data = {"success" : False, "data" :{"message" : "Order_Id Already Exist"}}
+                context_data = {"success" : False, "data" :{"message" : "Order Already Exist"}}
                 return Response(context_data)
         
             try:
                 order_details = {
                 "total_amount":request.data.get('total_amount'),
-                "order_date": request.data.get('order_date'),
-                #"order_status": request.data.get('order_status'),
-                "customer_id" : request.data.get('customer_id'),
                 "billing_address": request.data.get('billing_address'),
                 "shipping_address": request.data.get('shipping_address'),
                 }
-                #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
+
+
+                if 'customer_id' in request.data:
+
+                        
+                        customer_id = request.data['customer_id']
+                        customer_id_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+                        if(customer_id_check.search(customer_id) != None):
+                            context_data = {"success" : False, "errors" :{"message" : "Customer id should be Numerics"}}
+                            return Response(context_data)  
+                
+                
+                queryset = Order.objects.filter(customer_id=customer_id).values('billing_address','shipping_address','total_amount')
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 order_data = Order.objects.create(**order_details)
-                context_data = {"success" : True, "data" :{"customer_data": order_data, "message" : "Your Order has Placed Successfully"}}
+                context_data = {"success" : True, "data" :{"customer_data": order_data, "message" : "Customer created Successfully"}}
             except Exception as e:
                 #traceback.print_exc()
                 context_data = {"success" : False, "errors" : {"message":str(e)}}
@@ -280,14 +289,14 @@ class GetOrderedDetails(APIView):
             ordered_obj_list = Order.objects.filter(order_date__range=[start_date,end_date])
 
             for each_ord in ordered_obj_list:
-                # first_name = each_ord.customer.first_name
-                # last_name = each_ord.customer.last_name
-                # mobile_number = each_ord.customer.mobile_number
-                # email_id = each_ord.customer.mobile_number
-                # address = each_ord.customer.address
-                # shipping_address = each_ord.shipping_address
-                # billing_address = each_ord.billing_address
-                # order_date = each_ord.order_date
+                first_name = each_ord.customer.first_name
+                last_name = each_ord.customer.last_name
+                mobile_number = each_ord.customer.mobile_number
+                email_id = each_ord.customer.mobile_number
+                address = each_ord.customer.address
+                shipping_address = each_ord.shipping_address
+                billing_address = each_ord.billing_address
+                order_date = each_ord.order_date
                 total_amount = each_ord.total_amount
 
                 order_list.append([first_name,last_name,mobile_number,email_id,address,shipping_address,billing_address,order_date,total_amount])
