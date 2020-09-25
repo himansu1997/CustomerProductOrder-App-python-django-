@@ -32,4 +32,11 @@ urlpatterns = [
     #summary by date
     url(r'^ordered_summary/get$', views.SummaryReportView.as_view()),
 
+    #Get last 10 orders
+    url(r'^last/orders/get$', views.GetLastOrderDetails.as_view(), name="get latest orders"),
+
+    #Vendor
+    url(r'^vendor/add$', views.VendorAdd.as_view(), name="add vendors"),
+    url(r'^vendor/update/(?P<id>[\w-]+)$', views.VendorUpdate.as_view(), name="update vendors"),
+
 ]

@@ -8,7 +8,8 @@ from store.models import Product
 from store.models import Customer
 from store.models import Orderedproducts
 from store.models import Order
-from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer,GetOrderSerializerDateRange
+from store.models import Vendor
+from store.serializers import ProductAddSerializer,CustomerCreateSerializer,OrderCreateSeriliazer,GetOrderSerializerDateRange,VendorAddSerializer,VendorEditSerializer
 from rest_framework.decorators import api_view
 from rest_framework import status 
 from rest_framework import request
@@ -89,10 +90,11 @@ class ProductGet(APIView):
             "price":product_obj.price,
             "description":product_obj.description,
             "created":product_obj.created,
-            "modified":product_obj.modified
+            "modified":product_obj.modified,
+            "product_category":product_obj.product_category,
             }
             product_data.append(prod_get_objects)
-            context_data = {"success" : True, "data" :{"product_data" :prod_get_objects}}
+            context_data = {"success" : True, "data" :{"product_data" :product_data}}
         except Product.DoesNotExist as e:            
             context_data = {"success" : False, "errors" : {"message":"Product Record Does Not Exist"}}
             pass
@@ -339,12 +341,168 @@ class AggregateView(APIView):
             return Response(context_data)
 
 
+class GetLastOrderDetails(APIView):
+    def get(self,request,format=None):
+        try:
+                get_last_records = Order.objects.order_by('order_date')[0:1].get()
+                #get_last_records = Order.objects.filter(order_date=order_date).order_by('-id')[:10][::-1]
+                ordered_data = []
+
+                ordered_obj ={
+                "order":get_last_records.id,
+                "total_amount":get_last_records.total_amount,
+                "customer":get_last_records.id,
+                "first_name":get_last_records.customer.first_name,
+                "last_name":get_last_records.customer.last_name,
+                "mobile_number":get_last_records.customer.mobile_number,
+                "email_id":get_last_records.customer.email_id,
+                "address":get_last_records.customer.address,
+                "product":get_last_records.id,
+                "shipping_address":get_last_records.shipping_address,
+                "billing_address":get_last_records.billing_address,
+                "order_date":get_last_records.order_date,
+                }
+                ordered_data.append(ordered_obj)
+                context_data = {"success" : True, "data" :{"ordered details" :ordered_data}}
+        except Order.DoesNotExist as e:            
+                context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+        return Response(context_data)
+
+
+
+
+class VendorAdd(APIView):
+    def get(self, request, format=None):
+        serializer = VendorAddSerializer()
+        context_data = {"success" : False, "data" : serializer.data}    
+        return Response(context_data)
+    
+    @method_decorator(csrf_exempt)
+    def post(self, request,  format=None):
+        serializer = VendorAddSerializer(data=request.data)
+        if serializer.is_valid():
+            #Verify Vendor
+            
+            vendor_obj_count = Vendor.objects.filter(vendor_store_number=request.data['vendor_store_number'])
+            if vendor_obj_count.count() > 0:
+                context_data = {"success" : False, "data" :{"message" : "Vendor Number Already Exists"}}
+                return Response(context_data)
+            try:
+                vendor_details = {
+                "vendor_store_name":request.data.get('vendor_store_name'),
+                "vendor_store_number": request.data.get('vendor_store_number'),
+                "vendor_store_email": request.data.get('vendor_store_email'),
+                "vendor_store_address": request.data.get('vendor_store_address'),
+                }
+                # if 'id' in request.data:
+                #         product_number = request.data['product_number']
+                #         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+                #         if(product_number_check.search(product_number) != None):
+                #             context_data = {"success" : False, "errors" :{"message" : "Product Number should not contain special characters"}}
+                #             return Response(context_data)  
+                #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
+                #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
+                product_data = Vendor.objects.create(**vendor_details)
+                queryset = Vendor.objects.filter(vendor_store_number=vendor_store_number).values('vendor_store_name','vendor_store_number','vendor_store_email','vendor_store_address')
+                context_data = {"success" : True, "data" :{"vendor_data": queryset, "message" : "Vendor Added Successfully"}}
+            except Exception as e:
+                #traceback.print_exc()
+                context_data = {"success" : False, "errors" : {"message":str(e)}}
+        else:
+            context_data = {"success" : False, "errors" : {"message":"Not created" }}
+        return Response(context_data)
+
+
+class VendorUpdate(APIView):
+    def get(self,request, id=None, format=None):
+        try:
+            vendor_obj = Vendor.objects.get(id=id)
+            vendor_data = []
+            
+            kwargs ={
+            "vendor_store_name":vendor_obj.vendor_store_name,
+            "vendor_store_number":vendor_obj.vendor_store_number,
+            "vendor_store_email":vendor_obj.vendor_store_email,
+            "vendor_store_address":vendor_obj.vendor_store_address,
+            }
+            vendor_data.append(kwargs)
+            context_data = {"success" : True, "data" :{"vendor_data" :vendor_data}}
+        except Vendor.DoesNotExist as e:            
+            context_data = {"success" : False, "errors" : {"message":"No Vendor Data Found"}}
+            pass
+        return Response(context_data)
+   
+    @method_decorator(csrf_exempt)
+    def post(self,request,id=None,format=None):
+        serializer = VendorEditSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                queryset = Vendor.objects.filter(id=id)
+                doctor_group_obj = None
+                if queryset.count()  == 1:
+                    vendor = {
+                                "vendor_store_name":request.data['vendor_store_name'],
+                                "vendor_store_number":request.data['vendor_store_number'],
+                                "vendor_store_email":request.data['vendor_store_email'],
+                                "vendor_store_address":request.data['vendor_store_address'],
+                                
+                                }
+
+                    #Mobile No Validation
+                    vendor_store_number = request.data['vendor_store_number']
+                    if not vendor_store_number.startswith(('6','7','8','9')):
+                        context_data = {"success" : False, "errors" :{"message" : "Invalid mobile number"}}
+                        return Response(context_data)                    
+                                                             
+                    try:
+                        vendor_obj = queryset.first()
+                    except Exception as e:
+                        context_data = {"success" : False, "errors" :{"message" : "Store Number already registered with another patient", "exc":traceback.format_exc()}}
+                        return Response(context_data)
+                        pass
+                    queryset.update(**vendor)
+                    vendor_obj = Vendor.objects.get(id=id)
+                    context_data = {"success" : True, "data" :{"message" : "Vendor Data({}) Updated Successfully".format(request.data['vendor_store_number'])}}
+                else:
+                    context_data = {"success" : False, "errors" :{"message" : "Invalid Vendor Id"}}
+
+            except Exception as e:
+                context_data = {"success" : False, "errors" : {"message":"ffff"}}
+                pass
+        else:
+            context_data = {"success" : False, "errors" : {"message":"fff"}}
+        return Response(context_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class SummaryReportView(APIView):
     def post(self,request,format=None):
         try:
-            order_objects = Order.objects.filter(order_date=request.data['order_date']).count()
-            context_data = {"success":True, "data" :order_objects, "message": "Number of orders are :"}
+            order_objects = Order.objects.filter(order_date=request.data['order_date']).count('id')
+
+            # order_objects = Order.objects.values('order_date').annotate(total=Count('order_date')),order_by('order_date')
+            context_data = {"success":True, "data" :order_objects, "message": "Number of orders for the day are:"}
             return Response(context_data)
         except Order.DoesNotExist as e:
             context_data = {"success":False, "errors":{"message": "No record Found"}}

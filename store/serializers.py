@@ -73,9 +73,44 @@ class OrderCreateSeriliazer(serializers.Serializer):
     oder_status = models.BooleanField(default=True)
     billing_address = models.CharField(max_length=250)
     shipping_address = models.CharField(max_length=250)
+    customer_id = models.CharField(max_length=100)
 
 
 class GetOrderSerializerDateRange(serializers.Serializer):
     #query_type = models.CharField(max_length=100)
     from_date = models.CharField(max_length=100)
     to_date = models.CharField(max_length=100)
+
+class VendorAddSerializer(serializers.Serializer):
+    vendor_store_name = models.CharField(max_length=200)
+    vendor_store_number = models.CharField(max_length=20)
+    vedor_store_email = models.CharField(max_length=20)
+    vendor_store_address = models.CharField(max_length=200)
+
+    def validate_vedor_store_email(self):
+        vedor_store_email = self.cleaned_data["vedor_store_email"]
+        if " " in vedor_store_email:
+            raise forms.ValidationError('Enter a vaild email')
+        elif vedor_store_email:
+            vedor_store_email = vedor_store_email.replace(' ','')
+            if not re.match("^(?!\.)[a-zA-Z0-9_,]*\.?[\.?a-zA-Z0-9_]+@[a-zA-Z]+\.(([a-zA-Z]{3})|([a-zA-Z]{2}\.[a-zA-Z]{2}))$",vedor_store_email):
+                raise forms.ValidationError('Enter a vaild email')
+        return self.cleaned_data['vedor_store_email']
+
+    def validate_vendor_store_number(self, value):
+        value = value.replace(' ', '')
+        if len(value) != 10:
+            raise serializers.ValidationError("Mobile Number Length Must Be 10 Digits")
+        if not value.isnumeric():
+            raise serializers.ValidationError("Mobile Number Must Be Digits")
+        if not str(value).startswith(('6','7','8','9')):
+            raise serializers.ValidationError("Invalid mobile number")
+        return value
+
+
+
+class VendorEditSerializer(serializers.Serializer):
+    vendor_store_name = models.CharField(max_length=200)
+    vendor_store_number = models.CharField(max_length=20)
+    vedor_store_email = models.CharField(max_length=20)
+    vendor_store_address = models.CharField(max_length=200)
