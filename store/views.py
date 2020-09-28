@@ -394,14 +394,7 @@ class VendorAdd(APIView):
                 "vendor_store_email": request.data.get('vendor_store_email'),
                 "vendor_store_address": request.data.get('vendor_store_address'),
                 }
-                # if 'id' in request.data:
-                #         product_number = request.data['product_number']
-                #         product_number_check = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
-                #         if(product_number_check.search(product_number) != None):
-                #             context_data = {"success" : False, "errors" :{"message" : "Product Number should not contain special characters"}}
-                #             return Response(context_data)  
-                #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
-                #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
+
                 product_data = Vendor.objects.create(**vendor_details)
                 queryset = Vendor.objects.filter(vendor_store_number=vendor_store_number).values('vendor_store_name','vendor_store_number','vendor_store_email','vendor_store_address')
                 context_data = {"success" : True, "data" :{"vendor_data": queryset, "message" : "Vendor Added Successfully"}}
@@ -457,12 +450,12 @@ class VendorUpdate(APIView):
                     try:
                         vendor_obj = queryset.first()
                     except Exception as e:
-                        context_data = {"success" : False, "errors" :{"message" : "Store Number already registered with another patient", "exc":traceback.format_exc()}}
+                        context_data = {"success" : False, "errors" :{"message" : "Store Number Details already registered", "exc":traceback.format_exc()}}
                         return Response(context_data)
                         pass
                     queryset.update(**vendor)
                     vendor_obj = Vendor.objects.get(id=id)
-                    context_data = {"success" : True, "data" :{"message" : "Vendor Data({}) Updated Successfully".format(request.data['vendor_store_number'])}}
+                    context_data = {"success" : True, "data" :{"message" : "Vendor Data({}) Updated Successfully".format(request.data['vendor_store_name'])}}
                 else:
                     context_data = {"success" : False, "errors" :{"message" : "Invalid Vendor Id"}}
 
