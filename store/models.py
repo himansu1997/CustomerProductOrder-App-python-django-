@@ -14,7 +14,7 @@ class Product(models.Model):
     name = models.CharField(max_length=250)
     brand = models.CharField(max_length=250, blank=True)
     description = models.CharField(max_length=300,blank=True,null=True)
-    price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
+    sale_price = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
     created = models.DateTimeField(auto_now_add=True,null=True)
     modified = models.DateTimeField(auto_now=True,null=True)
     product_category = models.CharField(max_length=250, blank=True) 
