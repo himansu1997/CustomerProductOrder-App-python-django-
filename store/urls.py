@@ -32,6 +32,9 @@ urlpatterns = [
     #summary by date
     url(r'^ordered_summary/get$', views.SummaryReportView.as_view()),
 
+    #summary csv url
+    url(r'^order/summary/csv/report$', views.OrderSummaryReportCsv.as_view(), name="get_order_summary"),
+
     #Get last 10 orders
     url(r'^last/orders/get$', views.GetLastOrderDetails.as_view(), name="get latest orders"),
 

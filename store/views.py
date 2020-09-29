@@ -52,7 +52,8 @@ class ProductAddSet(APIView):
                 "name": request.data.get('name'),
                 "brand": request.data.get('brand'),
                 "description": request.data.get('description'),
-                "price": request.data.get('price'),
+                "sale_price": request.data.get('sale_price'),
+                "product_category": request.data.get('product_category')
                 }
                 if 'product_number' in request.data:
                         product_number = request.data['product_number']
@@ -63,7 +64,7 @@ class ProductAddSet(APIView):
                 #queryset = Product.objects.filter(product_number__product_number=request.data['product_number'])
                 #product_data = queryset.values('product_number','name','brand','description','price','featured','active','created','modified')
                 product_data = Product.objects.create(**product_details)
-                queryset = Product.objects.filter(product_number=product_number).values('name','brand','description','price')
+                queryset = Product.objects.filter(product_number=product_number).values('name','brand','description','sale_price')
                 context_data = {"success" : True, "data" :{"product_data": queryset, "message" : "Product Added Successfully"}}
             except Exception as e:
                 #traceback.print_exc()
@@ -87,7 +88,7 @@ class ProductGet(APIView):
             "product_number":product_obj.product_number,
             "name":product_obj.name,
             "brand":product_obj.brand,
-            "price":product_obj.price,
+            "sale_price":product_obj.price,
             "description":product_obj.description,
             "created":product_obj.created,
             "modified":product_obj.modified,
@@ -502,7 +503,37 @@ class SummaryReportView(APIView):
             pass
 
 
+class OrderSummaryReportCsv(APIView):
+    def get(self,request):
+        try:
+            order_date = request.GET.get('order_date')
 
+            order_list=[]
+            order_obj_list = Order.objects.filter(order_date=(order_date))
+            for each_doc in order_obj_list:
+                # id=each_doc.id
+                order_date=each_doc.order.order_date
+                total_amount=each_doc.order.total_amount
+                order_status=each_doc.order.order_status
+                billing_address=each_doc.order.billing_address
+                shipping_address=each_doc.order.shipping_address
+
+                order_list.append([order_date,total_amount,order_status,billing_address,shipping_address])
+
+            response=HttpResponse(content_type='text/csv')
+            current_date = datetime.now().strftime("%Y-%m-%d : %H-%M-%S %p")
+            filename = "Order-Summary-Download_{}.csv"
+            response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+            field_names = ['id','order_date','total_amount','order_status','billing_address','shipping_address']
+
+            writer=csv.writer(response)
+            writer.writerow(field_names)
+            writer.writerows(order_list)
+            return response
+
+        except Exception as e:
+            context_data = {"success":False,"errors":{"message": "Invalid order date OR No orders on that date"}}
+        return Response(context_data)
 
 
 
