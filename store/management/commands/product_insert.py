@@ -28,7 +28,7 @@ class Command(BaseCommand):
 				name= random_string_generator(10,'char'),
 				brand=random.choice(brand_choices),
 				description=random_string_generator(50,'char'),
-				price=decimal.Decimal(random.randrange(4567,67890)),
+				sale_price=decimal.Decimal(random.randrange(4567,67890)),
 				product_category =ranom.choice(category_choices)
 				 )
 			#Product.objects.create(product_number=random.randint(1,10),name=get_random_string(),brand=get_random_string(),description=get_random_string(),price='', )
