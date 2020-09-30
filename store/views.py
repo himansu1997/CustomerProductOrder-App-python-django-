@@ -271,7 +271,7 @@ class GetOrderedDetails(APIView):
 
             }
             ordered_data.append(ordered_get_objects)
-            context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+            context_data = {"success" : True, "data" :{"ordered details" :ordered_data}}
         except Order.DoesNotExist as e:            
             context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
             pass
@@ -497,6 +497,32 @@ class VendorUpdate(APIView):
         return Response(context_data)
 
 
+class GetVendorDetails(APIView):
+    def get(self,request,id=None,format=None):
+        try:
+            vendor_obj = Vendor.objects.get(pk=id)
+            vendor_data = []
+
+            vendor_get_objects ={
+            "product":vendor_obj.id,
+            "vendor_store_name":vendor_obj.total_amount,
+            "vendor_store_number":vendor_obj.id,
+            "vendor_store_email":vendor_obj.customer.first_name,
+            "vendor_store_address":vendor_obj.customer.last_name,
+            "product_number":vendor_obj.product.product_number,
+            "name":vendor_obj.product.name,
+            "brand":vendor_obj.product.brand,
+            "description":vendor_obj.product.description,
+            "sale_price":vendor_obj.product.sale_price,
+            "product_category":vendor_obj.product.product_category,
+
+            }
+            vendor_data.append(vendor_get_objects)
+            context_data = {"success" : True, "data" :{"Vendor details" :vendor_data}}
+        except Vendor.DoesNotExist as e:            
+            context_data = {"success" : False, "errors" : {"message":"No Vendors Exist Exist"}}
+            pass
+        return Response(context_data)
 
 class SummaryReportView(APIView):
     def post(self,request,format=None):

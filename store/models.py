@@ -3,13 +3,17 @@ from django.db import models
 # Create your models here.
 
 class Vendor(models.Model):
+    product = models.ForeignKey("store.Product",related_name='Vendor')
     vendor_store_name = models.CharField(max_length=200, null=True, blank=True)
     vendor_store_number = models.CharField(max_length=20, null=True, blank=True)
     vendor_store_email = models.CharField(max_length=20, null=20, blank=True)
     vendor_store_address = models.CharField(max_length=200, null=True, blank=True)
 
+    def __str__(self):
+        return "%s"%self.vendor_store_name
+
 class Product(models.Model):
-    vendor = models.ForeignKey(Vendor)
+    vendor = models.ManyToManyField(Vendor,related_name='Product')
     product_number = models.CharField(max_length=100,unique=True)
     name = models.CharField(max_length=250)
     brand = models.CharField(max_length=250, blank=True)

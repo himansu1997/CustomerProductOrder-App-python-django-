@@ -30,10 +30,10 @@ urlpatterns = [
     #url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetailsById.as_view()),
 
     #Min & Max url
-    url(r'^orderd_details/aggregate/(?P<query_type>\w+)$',views.AggregateView.as_view()),
+    url(r'^orderd_details/aggregate/(?P<query_type>\w+)$',views.AggregateView.as_view(), name="get_Min&Max_price"),
 
     #summary by date
-    url(r'^ordered_summary/get$', views.SummaryReportView.as_view()),
+    url(r'^ordered_summary/get$', views.SummaryReportView.as_view(), name="get_order_summary"),
 
     #summary csv url
     url(r'^order/summary/csv/report$', views.OrderSummaryReportCsv.as_view(), name="get_order_summary"),
@@ -42,7 +42,10 @@ urlpatterns = [
     url(r'^last/orders/get$', views.GetLastOrderDetails.as_view(), name="get latest orders"),
 
     #Vendor
-    url(r'^vendor/add$', views.VendorAdd.as_view(), name="add vendors"),
+    url(r'^vendor/add$', views.VendorAdd.as_view(), name="create_vendor_data"),
     url(r'^vendor/update/(?P<id>[\w-]+)$', views.VendorUpdate.as_view(), name="update vendors"),
+
+    #vendor details by id
+    url(r'^vendor_details/(?P<id>[\w-]+)/get$',views.GetVendorDetails.as_view(), name="get_vendor_details"),
 
 ]
