@@ -20,8 +20,11 @@ urlpatterns = [
 
     url(r'^remove/customer/(?P<customer_number>[\w-]+)', views.DeleteCustomer.as_view(), name="delete_customer"),
 
-    url(r'^orderd_details/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),
-    url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetails.as_view()),
+    # url(r'^orderd_details/get$', views.GetOrderedDetails.as_view(), name="get_all_data"),)
+    url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetailsCsv.as_view(), name="json_csv_report"),
+
+    #Get Order Details By Id
+    url(r'^orderd_details/(?P<order_id>[\w-]+)/get$',views.GetOrderedDetails.as_view(), name="get orderd details by id"),
 
     #Get By Id
     #url(r'^orderd_details/(?P<query_type>\w+)$',views.GetOrderedDetailsById.as_view()),

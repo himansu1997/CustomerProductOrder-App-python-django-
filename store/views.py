@@ -248,8 +248,37 @@ class OrderCreate(APIView):
         return Response(context_data)
 
 
-
+    #Order details by Id
 class GetOrderedDetails(APIView):
+    def get(self,request,order_id=None,format=None):
+        try:
+            ordered_obj = Order.objects.get(pk=order_id)
+            ordered_data = []
+
+            ordered_get_objects ={
+            "order":ordered_obj.id,
+            "total_amount":ordered_obj.total_amount,
+            "customer":ordered_obj.id,
+            "first_name":ordered_obj.customer.first_name,
+            "last_name":ordered_obj.customer.last_name,
+            "mobile_number":ordered_obj.customer.mobile_number,
+            "email_id":ordered_obj.customer.email_id,
+            "address":ordered_obj.customer.address,
+            "product":ordered_obj.id,
+            "shipping_address":ordered_obj.shipping_address,
+            "billing_address":ordered_obj.billing_address,
+            "order_date":ordered_obj.order_date,
+
+            }
+            ordered_data.append(ordered_get_objects)
+            context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+        except Order.DoesNotExist as e:            
+            context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+            pass
+        return Response(context_data)
+
+
+class GetOrderedDetailsCsv(APIView):
     def get(self,request,query_type):
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
@@ -379,7 +408,7 @@ class VendorAdd(APIView):
         return Response(context_data)
     
     @method_decorator(csrf_exempt)
-    def post(self, request,  format=None):
+    def post(self, request,format=None):
         serializer = VendorAddSerializer(data=request.data)
         if serializer.is_valid():
             #Verify Vendor
@@ -396,7 +425,7 @@ class VendorAdd(APIView):
                 "vendor_store_address": request.data.get('vendor_store_address'),
                 }
 
-                product_data = Vendor.objects.create(**vendor_details)
+                vendor_data = Vendor.objects.create(**vendor_details)
                 queryset = Vendor.objects.filter(vendor_store_number=vendor_store_number).values('vendor_store_name','vendor_store_number','vendor_store_email','vendor_store_address')
                 context_data = {"success" : True, "data" :{"vendor_data": queryset, "message" : "Vendor Added Successfully"}}
             except Exception as e:
@@ -472,6 +501,40 @@ class VendorUpdate(APIView):
 
 
 
+# class GetVendorDetails(APIView):
+#     def post(self,request, order_id=None,format=None):
+#         serializer = GetOrderSerializer(data=request.data)
+#         if serializer.is_valid():
+
+#             try:
+#                 #ordered_obj = Order.objects.get(pk=order_id)
+#                 #ordered_obj = Orderedproducts.objects.get(product_number=product_number)
+#                 #ordered_obj = Order.objects.get(pk=order_id)
+
+#                 ordered_obj = Order.objects.filter().values(order_id=request.data['customer_number']).values('first_name')
+#                 ordered_data = []
+            
+#                 ordered_get_objects ={
+#                 "order":ordered_obj.id,
+#                 "total_amount":ordered_obj.total_amount,
+#                 "customer":ordered_obj.id,
+#                 "first_name":ordered_obj.customer.first_name,
+#                 "last_name":ordered_obj.customer.last_name,
+#                 "mobile_number":ordered_obj.customer.mobile_number,
+#                 "email_id":ordered_obj.customer.email_id,
+#                 "address":ordered_obj.customer.address,
+#                 "product":ordered_obj.id,
+#                 #"name":product_obj.product.name,
+#                 "shipping_address":ordered_obj.shipping_address,
+#                 "billing_address":ordered_obj.billing_address,
+#                 "order_date":ordered_obj.order_date,
+#                 }
+#                 ordered_data.append(ordered_get_objects)
+#                 context_data = {"success" : True, "data" :{"ordered details" :ordered_get_objects}}
+#             except Order.DoesNotExist as e:            
+#                 context_data = {"success" : False, "errors" : {"message":"Record Does Not Exist"}}
+#                 pass
+#         return Response(context_data)
 
 
 
