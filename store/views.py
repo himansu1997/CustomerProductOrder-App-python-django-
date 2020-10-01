@@ -506,9 +506,10 @@ class GetVendorDetails(APIView):
             vendor_get_objects ={
             "product":vendor_obj.id,
             "vendor_store_name":vendor_obj.total_amount,
-            "vendor_store_number":vendor_obj.id,
-            "vendor_store_email":vendor_obj.customer.first_name,
-            "vendor_store_address":vendor_obj.customer.last_name,
+            "vendor_store_number":vendor_obj.vendor_store_number,
+            "vendor_store_email":vendor_obj.vendor_store_email,
+            "vendor_store_address":vendor_obj.vendor_store_address,
+            "revenue":vendor_obj.revenue,
             "product_number":vendor_obj.product.product_number,
             "name":vendor_obj.product.name,
             "brand":vendor_obj.product.brand,
@@ -523,6 +524,27 @@ class GetVendorDetails(APIView):
             context_data = {"success" : False, "errors" : {"message":"No Vendors Exist Exist"}}
             pass
         return Response(context_data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class SummaryReportView(APIView):
     def post(self,request,format=None):
