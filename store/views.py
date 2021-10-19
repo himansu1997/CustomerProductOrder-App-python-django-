@@ -29,7 +29,7 @@ from django.db.models import Min
 from django.db.models import Count
 
 
- #Adding the products
+#Adding the products
 class ProductAddSet(APIView):
     def get(self, request, format=None):
         serializer = ProductAddSerializer()
@@ -40,8 +40,7 @@ class ProductAddSet(APIView):
     def post(self, request,  format=None):
         serializer = ProductAddSerializer(data=request.data)
         if serializer.is_valid():
-            #Verify Product
-            
+            #Verify Product  
             product_obj_count = Product.objects.filter(product_number=request.data['product_number'])
             if product_obj_count.count() > 0:
                 context_data = {"success" : False, "data" :{"message" : "Product Number Already Exists"}}
@@ -76,7 +75,7 @@ class ProductAddSet(APIView):
 
 
 
-        #GET PRODUCT DETAILS BY PRODUCT NUMBER
+#GET PRODUCT DETAILS BY PRODUCT NUMBER
 class ProductGet(APIView):
     def get(self,request, product_number=None, format=None):
         try:
@@ -103,7 +102,7 @@ class ProductGet(APIView):
 
 
 
- #delete the product by id
+#delete the product by id
 class DeleteOrder(APIView):
     def post(self,request,username=None):
         try:            
@@ -176,7 +175,7 @@ class DeleteCustomer(APIView):
             context_data = {"success" : False,"errors" : {"message":"No Customer is available with this Id"}}
         return Response(context_data) 
 
-
+#GET CUSTOMER DETAILS BY CUSTOMER NUMBER
 class GetCustomerDetails(APIView):
     def get(self,request, customer_number=None, format=None):
         try:
@@ -248,7 +247,7 @@ class OrderCreate(APIView):
         return Response(context_data)
 
 
-    #Order details by Id
+#ORDER DETAILS BY Id
 class GetOrderedDetails(APIView):
     def get(self,request,order_id=None,format=None):
         try:
@@ -277,7 +276,7 @@ class GetOrderedDetails(APIView):
             pass
         return Response(context_data)
 
-
+#DOWNLOAD THE CSV FOR ORDERS
 class GetOrderedDetailsCsv(APIView):
     def get(self,request,query_type):
         start_date = request.GET.get('start_date')
@@ -524,27 +523,6 @@ class GetVendorDetails(APIView):
             context_data = {"success" : False, "errors" : {"message":"No Vendors Exist Exist"}}
             pass
         return Response(context_data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class SummaryReportView(APIView):
     def post(self,request,format=None):
