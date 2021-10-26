@@ -1,0 +1,11 @@
+*.pyc
+*~
+# *.csv
+# *.pdf
+# *.xls
+store/migrations/*
+
+
+*.pyc
+*~
+
